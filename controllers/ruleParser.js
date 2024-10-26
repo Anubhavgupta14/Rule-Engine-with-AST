@@ -75,13 +75,16 @@ const createRule = async (req, res) => {
     console.log(tokens)
     const ruleAst = parse(tokens);
     console.log(ruleAst)
+    if(!ruleAst){
+      return res.status(200).json({error:"Invalid Rule Format. Try Again"})
+    }
     // Save the rule and its AST to MongoDB
     const ruleString = new Rule({ ruleString: rule, ast: ruleAst });
     await ruleString.save();
 
-    res.status(200).send({ message: "Rule created successfully", data: ruleAst });
+    return res.status(200).json({ message: "Rule created successfully", data: ruleAst });
   } catch (err) {
-    res.status(400).json({ error: `Error while creating rule: ${err.message}` });
+    return res.status(400).json({ error: `Error while creating rule: ${err.message}` });
   }
 };
 

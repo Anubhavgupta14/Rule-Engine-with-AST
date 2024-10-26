@@ -20,9 +20,9 @@ const combineRules = async (req, res) => {
     const rules = await Rule.find();
     const asts = rules.map((rule) => rule.ast);
     const combinedAst = processRules(asts);
-    res.status(200).send({ message: "Rules combined", combinedAst });
+    return res.status(200).send({ message: "Rules combined", combinedAst });
   } catch (error) {
-    res.status(500).send({ error:`Error combining rules :${error}`});
+    return res.status(500).send({ error:`Error combining rules :${error}`});
   }
 };
 
