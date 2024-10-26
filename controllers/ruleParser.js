@@ -4,13 +4,11 @@ const Rule = require('../models/Rule');
 const operators = ["AND", "OR"];
 const comparisonOperators = [">", "<", "=", "!=", ">=", "<="];
 
-// Tokenize function
 const tokenize = (ruleString) => {
   const regex = /\s*(\(|\)|AND|OR|>|<|=|!=|>=|<=|'[^']*'|\w+)\s*/g;
   return ruleString.match(regex).map((token) => token.trim());
 };
 
-// Parse the operand, but now expect tokens separately (e.g., 'age', '>', '30')
 const parseOperand = (attribute, operator, value) => {
   if (!attribute || !operator || value === undefined) {
     throw new Error(`Invalid operand: ${attribute} ${operator} ${value}`);
@@ -43,7 +41,6 @@ const parse = (tokens) => {
       node = operatorNode;
       i++;
     } else if (comparisonOperators.includes(tokens[i + 1])) {
-      // Detecting an operand sequence (e.g., 'age > 30')
       const attribute = token;
       const operator = tokens[i + 1];
       const value = tokens[i + 2];
@@ -56,7 +53,6 @@ const parse = (tokens) => {
         node = operandNode;
       }
 
-      // Move the index forward to skip the operand tokens
       i += 3;
     } else {
       i++;
@@ -70,7 +66,6 @@ const createRule = async (req, res) => {
   try {
     const { rule } = req.body;
     console.log(rule)
-    // Tokenize and parse the rule
     const tokens = tokenize(rule);
     console.log(tokens)
     const ruleAst = parse(tokens);
@@ -78,7 +73,6 @@ const createRule = async (req, res) => {
     if(!ruleAst){
       return res.status(200).json({error:"Invalid Rule Format. Try Again"})
     }
-    // Save the rule and its AST to MongoDB
     const ruleString = new Rule({ ruleString: rule, ast: ruleAst });
     await ruleString.save();
 
@@ -88,4 +82,34 @@ const createRule = async (req, res) => {
   }
 };
 
-module.exports = { createRule };
+
+const editRule = async (req, res) => {
+  try {
+    const { _id, rule } = req.body;
+    if (!_id || !rule) {
+      return res.status(400).json({ error: "Both _id and ruleString are required." });
+    }
+
+    const tokens = tokenize(rule);
+    const ruleAst = parse(tokens);
+
+    if (!ruleAst) {
+      return res.status(400).json({ error: "Invalid Rule Format. Try Again" });
+    }
+    const updatedRule = await Rule.findByIdAndUpdate(
+      _id,
+      { ruleString:rule, ast: ruleAst },
+      { new: true }
+    );
+
+    if (!updatedRule) {
+      return res.status(404).json({ error: "Rule not found." });
+    }
+
+    return res.status(200).json({ message: "Rule updated successfully", data: updatedRule });
+  } catch (err) {
+    return res.status(400).json({ error: `Error while updating rule: ${err.message}` });
+  }
+};
+
+module.exports = { createRule, editRule };
